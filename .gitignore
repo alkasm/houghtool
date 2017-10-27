@@ -1,0 +1,4 @@
+.vscode/
+houghtool/__pycache__/
+houghtool/old/
+houghtool/test.py
