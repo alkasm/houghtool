@@ -1,1 +1,3 @@
-Deprecated and coalesced into https://github.com/alkasm/cvtools
+# houghtool
+
+Utilities for working with Hough lines from OpenCV.
