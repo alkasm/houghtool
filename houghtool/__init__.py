@@ -327,7 +327,8 @@ def endpoint(line, bbox=[0, 0, 1e5, 1e5]):
             break
     if len(bounded_interx) != 4:
         # line is outside the bounding box
-        return [[[ERRORVAL, ERRORVAL]]] * 4
+        # return [[[ERRORVAL, ERRORVAL]]] * 4
+        return np.array([[ERRORVAL]*4])
     return np.array([bounded_interx])
 
 
@@ -563,7 +564,9 @@ def endpoint_intersection(line1, line2, tolerance=1e-6, subpixel=False):
     See https://stackoverflow.com/a/383527/5087436
     """
 
-    parallelism = abs(_line_angle(line1) - _line_angle(line2))
+    # parallelism = abs(_line_angle(line1) - _line_angle(line2))
+    parallelism = abs(lineangle(line1) - lineangle(line2))
+    
     if parallelism < tolerance:
         return [[ERRORVAL, ERRORVAL]]
 
@@ -579,6 +582,9 @@ def endpoint_intersection(line1, line2, tolerance=1e-6, subpixel=False):
     y0 = (
         (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)
     ) / denominator
+    
+    if np.isnan(x0) or np.isnan(y0):
+      return [[ERRORVAL, ERRORVAL]]
 
     if subpixel:
         return [[x0, y0]]
@@ -609,6 +615,7 @@ def intersection(line1, line2, tolerance=1e-6, subpixel=False):
 
 
 def draw_lines(img, lines, color=None, thickness=1):
+    num_lines_drawn = 0
     h, w = img.shape[:2]
     color = color or (0, 255, 0) if len(img.shape) == 3 else 255
     _linetype = linetype(lines[0])
@@ -616,10 +623,13 @@ def draw_lines(img, lines, color=None, thickness=1):
         lines = [convert(line, bbox=[0, 0, w, h]) for line in lines]
     for line in lines:
         for x1, y1, x2, y2 in line:
-            if ERRORVAL in [x1, y1, x2, y2]:
-                print("Line {} has np.nan vals; not drawing.".format(line))
+            # if ERRORVAL in [x1, y1, x2, y2]:
+            if True in np.isnan([x1, y1, x2, y2]):
+                # print("Line {} has np.nan vals; not drawing.".format(line))
                 continue
             cv2.line(img, (x1, y1), (x2, y2), color, thickness)
+            num_lines_drawn += 1
+    print('drawn %u lines' % num_lines_drawn)
     return img
 
 
@@ -627,7 +637,8 @@ def mark_endpoints(img, lines, color=None, markerType=cv2.MARKER_CROSS, markerSi
     color = color or (0, 255, 255) if len(img.shape) == 3 else 255
     for line in lines:
         for x1, y1, x2, y2 in line:
-            if ERRORVAL in [x1, y1, x2, y2]:
+            # if ERRORVAL in [x1, y1, x2, y2]:
+            if True in np.isnan([x1, y1, x2, y2]):
                 print("Line {} has np.nan vals; not drawing.".format(line))
                 continue
             cv2.drawMarker(img, (x1, y1), color, markerType, markerSize)
@@ -641,7 +652,8 @@ def mark_intersections(
     color = color or (0, 255, 255) if len(img.shape) == 3 else 255
     for point in intersections:
         for x, y in point:
-            if ERRORVAL in [x, y]:
+            # if ERRORVAL in [x, y]:
+            if True in np.isnan([x, y]):
                 print("Point {} has np.nan vals; not drawing.".format(point))
                 continue
             cv2.drawMarker(img, (x, y), color, markerType, markerSize)
