@@ -624,7 +624,8 @@ def draw_lines(img, lines, color=None, thickness=1):
     for line in lines:
         for x1, y1, x2, y2 in line:
             # if ERRORVAL in [x1, y1, x2, y2]:
-            if True in np.isnan([x1, y1, x2, y2]):
+            # if True in np.isnan([x1, y1, x2, y2]):
+            if np.isnan([x1, y1, x2, y2]).any():
                 # print("Line {} has np.nan vals; not drawing.".format(line))
                 continue
             cv2.line(img, (x1, y1), (x2, y2), color, thickness)
@@ -635,11 +636,16 @@ def draw_lines(img, lines, color=None, thickness=1):
 
 def mark_endpoints(img, lines, color=None, markerType=cv2.MARKER_CROSS, markerSize=5):
     color = color or (0, 255, 255) if len(img.shape) == 3 else 255
+    h, w = img.shape[:2]
+    _linetype = linetype(lines[0])
+    if _linetype == RHOTHETA:
+        lines = [convert(line, bbox=[0, 0, w, h]) for line in lines]
     for line in lines:
         for x1, y1, x2, y2 in line:
             # if ERRORVAL in [x1, y1, x2, y2]:
-            if True in np.isnan([x1, y1, x2, y2]):
-                print("Line {} has np.nan vals; not drawing.".format(line))
+            # if True in np.isnan([x1, y1, x2, y2]):
+            if np.isnan([x1, y1, x2, y2]).any():
+                # print("Line {} has np.nan vals; not drawing.".format(line))
                 continue
             cv2.drawMarker(img, (x1, y1), color, markerType, markerSize)
             cv2.drawMarker(img, (x2, y2), color, markerType, markerSize)
@@ -653,7 +659,8 @@ def mark_intersections(
     for point in intersections:
         for x, y in point:
             # if ERRORVAL in [x, y]:
-            if True in np.isnan([x, y]):
+            # if True in np.isnan([x, y]):
+            if np.isnan([x,y]).any():
                 print("Point {} has np.nan vals; not drawing.".format(point))
                 continue
             cv2.drawMarker(img, (x, y), color, markerType, markerSize)
