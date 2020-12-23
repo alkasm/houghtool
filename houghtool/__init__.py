@@ -313,7 +313,8 @@ def endpoint(line, bbox=[0, 0, 1e5, 1e5]):
         with bounding box borders.
     """
     x1, y1, x2, y2 = bbox
-    border_lines = [[[x1, np.pi / 2]], [[x2, np.pi / 2]], [[y1, 0]], [[y2, 0]]]
+    # border_lines = [[[x1, np.pi / 2]], [[x2, np.pi / 2]], [[y1, 0]], [[y2, 0]]]
+    border_lines = [[[x1, np.pi / 2]], [[x2, 0]], [[y1, 0]], [[y2, np.pi / 2]]]
 
     interx = [intersection(line, border_lines[i]) for i in range(4)]
 
