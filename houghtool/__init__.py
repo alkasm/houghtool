@@ -125,7 +125,7 @@ def isparallel(line1, line2, tol=None):
     -------
     isparallel : bool
         True if the difference in angle between each line is less than
-        tol, False otherwise. 
+        tol, False otherwise.
 
     Example
     -------
@@ -150,7 +150,7 @@ def length(line):
     ----------
     line : np.ndarray
         A line in endpoint form.
-    
+
     Returns
     -------
     length : float
@@ -231,7 +231,7 @@ def create_line(*args):
     ----------
     *args : numeric
         Either two numbers specifying `rho, theta` or four numbers
-        specifying `x1, y1, x2, y2`. 
+        specifying `x1, y1, x2, y2`.
 
     Returns
     -------
@@ -250,7 +250,7 @@ def create_line(*args):
     >>> x1, y1, x2, y2 = 0, 0, 500, 500
     >>> create_line(x1, y1, x2, y2)
     array([[  0,   0, 500, 500]])
-    
+
     """
     if len(args) == 2:
         return create_line_rhotheta(*args)
@@ -302,10 +302,10 @@ def endpoint(line, bbox=[0, 0, 1e5, 1e5]):
         or in an alternative view by the left-top-right-bottom walls,
         in the form [x1, y1, x2, y2]; default [0, 0, 1e5, 1e5].
         Intersections are found between the input line and the border
-        lines of the bounding box. Only the two points touching the 
+        lines of the bounding box. Only the two points touching the
         border of the bounding box are returned. For a specific image
         height and width, set bbox=[0, 0, w, h].
-    
+
     Returns
     -------
     line : np.ndarray
@@ -327,7 +327,7 @@ def endpoint(line, bbox=[0, 0, 1e5, 1e5]):
             break
     if len(bounded_interx) != 4:
         # line is outside the bounding box
-        return [[[ERRORVAL, ERRORVAL]]] * 4
+        return np.array([[ERRORVAL] * 4])
     return np.array([bounded_interx])
 
 
@@ -340,7 +340,7 @@ def rhotheta(line):
     ----------
     line : np.ndarray
         A line in endpoint form.
-    
+
     Returns
     -------
     line : np.ndarray
@@ -366,21 +366,21 @@ def convert(line, bbox=[0, 0, 1e5, 1e5]):
         A line in rho-theta or endpoint form, to be converted
         to the other; *or* a list (possibly nested) of such lines.
     bbox : list, optional
-        Used only when converting from rho-theta to endpoint lines. 
+        Used only when converting from rho-theta to endpoint lines.
         A bounding box defined by the top-left and bottom-right points
         or in an alternative view by the left-top-right-bottom walls,
         in the form [x1, y1, x2, y2]; default [0, 0, 1e5, 1e5].
         Intersections are found between the input line and the border
-        lines of the bounding box. Only the two points touching the 
+        lines of the bounding box. Only the two points touching the
         border of the bounding box are returned. For a specific image
         height and width, set bbox=[0, 0, w, h].
-    
+
     Returns
     -------
     line : np.ndarray
         If the input is a rho-theta line, returns an endpoint line
         with intersections at the bounding box borders. If the input
-        line is an endpoint line, returns a rho-theta line. If the 
+        line is an endpoint line, returns a rho-theta line. If the
         input is a list of lines, then returns the converted list.
     """
     if isinstance(line, list):
@@ -563,7 +563,8 @@ def endpoint_intersection(line1, line2, tolerance=1e-6, subpixel=False):
     See https://stackoverflow.com/a/383527/5087436
     """
 
-    parallelism = abs(_line_angle(line1) - _line_angle(line2))
+    parallelism = abs(lineangle(line1) - lineangle(line2))
+
     if parallelism < tolerance:
         return [[ERRORVAL, ERRORVAL]]
 
@@ -579,6 +580,9 @@ def endpoint_intersection(line1, line2, tolerance=1e-6, subpixel=False):
     y0 = (
         (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)
     ) / denominator
+
+    if np.isnan(x0) or np.isnan(y0):
+        return [[ERRORVAL, ERRORVAL]]
 
     if subpixel:
         return [[x0, y0]]
@@ -616,22 +620,22 @@ def draw_lines(img, lines, color=None, thickness=1):
         lines = [convert(line, bbox=[0, 0, w, h]) for line in lines]
     for line in lines:
         for x1, y1, x2, y2 in line:
-            if ERRORVAL in [x1, y1, x2, y2]:
-                print("Line {} has np.nan vals; not drawing.".format(line))
-                continue
-            cv2.line(img, (x1, y1), (x2, y2), color, thickness)
+            if not np.isnan([x1, y1, x2, y2]).all():
+                cv2.line(img, (x1, y1), (x2, y2), color, thickness)
     return img
 
 
 def mark_endpoints(img, lines, color=None, markerType=cv2.MARKER_CROSS, markerSize=5):
     color = color or (0, 255, 255) if len(img.shape) == 3 else 255
+    h, w = img.shape[:2]
+    _linetype = linetype(lines[0])
+    if _linetype == RHOTHETA:
+        lines = [convert(line, bbox=[0, 0, w, h]) for line in lines]
     for line in lines:
         for x1, y1, x2, y2 in line:
-            if ERRORVAL in [x1, y1, x2, y2]:
-                print("Line {} has np.nan vals; not drawing.".format(line))
-                continue
-            cv2.drawMarker(img, (x1, y1), color, markerType, markerSize)
-            cv2.drawMarker(img, (x2, y2), color, markerType, markerSize)
+            if not np.isnan([x1, y1, x2, y2]).all():
+                cv2.drawMarker(img, (x1, y1), color, markerType, markerSize)
+                cv2.drawMarker(img, (x2, y2), color, markerType, markerSize)
     return img
 
 
@@ -641,8 +645,6 @@ def mark_intersections(
     color = color or (0, 255, 255) if len(img.shape) == 3 else 255
     for point in intersections:
         for x, y in point:
-            if ERRORVAL in [x, y]:
-                print("Point {} has np.nan vals; not drawing.".format(point))
-                continue
-            cv2.drawMarker(img, (x, y), color, markerType, markerSize)
+            if not np.isnan([x, y]).all():
+                cv2.drawMarker(img, (x, y), color, markerType, markerSize)
     return img
